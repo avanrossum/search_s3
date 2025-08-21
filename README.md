@@ -1,6 +1,6 @@
 # S3 Object Search Tool
 
-![Tests](https://github.com/<YOUR_GITHUB_USERNAME>/search_s3/actions/workflows/tests.yml/badge.svg)
+![Tests](https://github.com/avanrossum/search_s3/actions/workflows/tests.yml/badge.svg)
 ![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 

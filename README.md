@@ -27,8 +27,14 @@ A powerful Python script for searching S3 objects across multiple buckets with f
 
 2. Download the script:
    ```bash
-   wget https://raw.githubusercontent.com/your-repo/search_s3.py
+   # Clone the repository
+   git clone https://github.com/avanrossum/search_s3.git
+   cd search_s3
    chmod +x search_s3.py
+   
+   # Or download directly
+   # wget https://raw.githubusercontent.com/avanrossum/search_s3/main/search_s3.py
+   # chmod +x search_s3.py
    ```
 
 ## Basic Usage
@@ -67,11 +73,11 @@ Filter buckets by inclusion pattern:
 
 ```bash
 # Search only buckets containing "gridpane"
-./search_s3.py "wellspring" "gridpane"
+./search_s3.py "foobar" "gridpane"
 
 # Using flags
-./search_s3.py --term "wellspring" --bucket "gridpane"
-./search_s3.py -t "wellspring" -b "gridpane"
+./search_s3.py --term "foobar" --bucket "gridpane"
+./search_s3.py -t "foobar" -b "gridpane"
 ```
 
 ## Advanced Filtering
@@ -115,7 +121,7 @@ Exclude objects or buckets containing specific terms:
 ./search_s3.py -t "data" -be "archive"
 
 # Combine inclusion and exclusion
-./search_s3.py -t "wellspring" -b "gridpane" -te "temp" -be "archive"
+./search_s3.py -t "foobar" -b "gridpane" -te "temp" -be "archive"
 
 # Regex exclusions
 ./search_s3.py --regex -t "\.log$" -te "\.(tmp|temp)$" -be "archive.*"
@@ -143,14 +149,14 @@ You can use multiple exclusion filters:
 Clean, aligned table output with no truncation:
 
 ```bash
-./search_s3.py "gleason"
+./search_s3.py "foobar"
 ```
 
 Example output:
 ```
 Bucket                                                    Key                                    Size       Modified              Class
-gridpane-backups-34c55ba6-c31e-4ffe-8910-6421ad5ca95b   snapshots/gleasonavery-com/10481      550B       2025-06-20T00:00:10+00:00 STANDARD
-gridpane-backups-34c55ba6-c31e-4ffe-8910-6421ad5ca95b   snapshots/gleasonavery-com/11231      550B       2025-07-20T00:00:10+00:00 STANDARD
+gridpane-backups-58s48ra6-d31e-4ffe-6326-6421ad5ca95b   snapshots/foobar-com/10481      550B       2025-06-20T00:00:10+00:00 STANDARD
+gridpane-backups-58s48ra6-d31e-4ffe-6326-6421ad5ca95b   snapshots/foobar-com/11231      550B       2025-07-20T00:00:10+00:00 STANDARD
 ```
 
 ### 2. Stacked Format
@@ -158,21 +164,21 @@ gridpane-backups-34c55ba6-c31e-4ffe-8910-6421ad5ca95b   snapshots/gleasonavery-c
 One object per section with clear separation:
 
 ```bash
-./search_s3.py "gleason" --stacked
+./search_s3.py "foobar" --stacked
 ```
 
 Example output:
 ```
 === Object 1 ===
-Bucket:     gridpane-backups-34c55ba6-c31e-4ffe-8910-6421ad5ca95b
-Key:        snapshots/gleasonavery-com/10481
+Bucket:     gridpane-backups-58s48ra6-531e-4ffe-1233-6421ad5ca95b
+Key:        snapshots/foobar-com/10481
 Size:       550B
 Modified:   2025-06-20T00:00:10+00:00
 Class:      STANDARD
 
 === Object 2 ===
-Bucket:     gridpane-backups-34c55ba6-c31e-4ffe-8910-6421ad5ca95b
-Key:        snapshots/gleasonavery-com/11231
+Bucket:     gridpane-backups-58s48ra6-531e-4ffe-1233-6421ad5ca95b
+Key:        snapshots/foobar-com/11231
 Size:       550B
 Modified:   2025-07-20T00:00:10+00:00
 Class:      STANDARD
@@ -183,13 +189,13 @@ Class:      STANDARD
 Tab-separated output for easy copy-paste:
 
 ```bash
-./search_s3.py "gleason" --raw
+./search_s3.py "foobar" --raw
 ```
 
 Example output:
 ```
 Bucket	Key	Size	LastModified	StorageClass
-gridpane-backups-34c55ba6-c31e-4ffe-8910-6421ad5ca95b	snapshots/gleasonavery-com/10481	550B	2025-06-20T00:00:10+00:00	STANDARD
+gridpane-backups-58s48ra6-g31e-4ffe-7895-6421ad5ca95b	snapshots/foobar-com/10481	550B	2025-06-20T00:00:10+00:00	STANDARD
 ```
 
 ### 4. CSV Format
@@ -198,16 +204,16 @@ Comma-separated values for spreadsheet import:
 
 ```bash
 # Output to terminal
-./search_s3.py "gleason" --csv
+./search_s3.py "foobar" --csv
 
 # Save to file
-./search_s3.py "gleason" --csv --csv-file results.csv
+./search_s3.py "foobar" --csv --csv-file results.csv
 ```
 
 Example output:
 ```csv
 Bucket,Key,Size,LastModified,StorageClass
-gridpane-backups-34c55ba6-c31e-4ffe-8910-6421ad5ca95b,snapshots/gleasonavery-com/10481,550B,2025-06-20T00:00:10+00:00,STANDARD
+gridpane-backups-58s48ra6-a31e-4ffe-1548-6421ad5ca95b,snapshots/foobar-com/10481,550B,2025-06-20T00:00:10+00:00,STANDARD
 ```
 
 ## Performance Characteristics

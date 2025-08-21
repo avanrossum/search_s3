@@ -86,7 +86,9 @@ def matches_pattern(text, pattern, mode):
 def should_exclude_object(key):
     """Check if object should be excluded based on term_excluding"""
     if term_excluding:
-        return matches_pattern(key, term_excluding, regex_mode)
+        # Compile the exclusion pattern
+        exclusion_pattern = compile_pattern(term_excluding, regex_mode)
+        return matches_pattern(key, exclusion_pattern, regex_mode)
     return False
 
 def list_hits_contains(bucket, substr):

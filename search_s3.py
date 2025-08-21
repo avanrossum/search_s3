@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-import boto3, sys, argparse, os, csv
+import boto3, sys, argparse, os, csv, re
 from botocore.config import Config
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Search S3 objects for a term')
-    parser.add_argument('term', nargs='?', help='Substring to match (case-sensitive)')
-    parser.add_argument('bucket_prefix', nargs='?', help='Bucket prefix to filter buckets (optional, searches all if not provided)')
-    parser.add_argument('-t', '--term', dest='term_flag', help='Substring to match (case-sensitive)')
-    parser.add_argument('-b', '--bucket', dest='bucket_flag', help='Bucket prefix to filter buckets (optional, searches all if not provided)')
+    parser.add_argument('term', nargs='?', help='Search term or regex pattern (case-sensitive)')
+    parser.add_argument('bucket_prefix', nargs='?', help='Bucket inclusion pattern or regex (optional, searches all if not provided)')
+    parser.add_argument('-t', '--term', dest='term_flag', help='Search term or regex pattern (case-sensitive)')
+    parser.add_argument('-b', '--bucket', dest='bucket_flag', help='Bucket inclusion pattern or regex (optional, searches all if not provided)')
+    parser.add_argument('-te', '--term-excluding', dest='term_excluding', help='Exclude objects with keys matching this term or regex')
+    parser.add_argument('-be', '--bucket-excluding', dest='bucket_excluding', help='Exclude buckets matching this term or regex')
+    parser.add_argument('--regex', action='store_true', help='Treat all patterns as regex (case-sensitive)')
+    parser.add_argument('--regex-ignore-case', action='store_true', help='Treat all patterns as regex (case-insensitive)')
     parser.add_argument('--raw', action='store_true', help='Output raw data (full bucket names and keys) for copy-paste')
     parser.add_argument('--stacked', action='store_true', help='Output in stacked format (one object per section)')
     parser.add_argument('--csv', action='store_true', help='Output in CSV format')
@@ -23,27 +27,78 @@ def parse_arguments():
     # Determine the bucket prefix (positional or flag)
     bucket_prefix = args.bucket_flag or args.bucket_prefix
     
-    return term, bucket_prefix, args.raw, args.stacked, args.csv, args.csv_file
+    # Determine regex mode
+    regex_mode = 'case_sensitive' if args.regex else ('case_insensitive' if args.regex_ignore_case else 'literal')
+    
+    return term, bucket_prefix, args.raw, args.stacked, args.csv, args.csv_file, args.term_excluding, args.bucket_excluding, regex_mode
 
-term, root_dir, raw_output, stacked_output, csv_output, csv_file = parse_arguments()
+term, root_dir, raw_output, stacked_output, csv_output, csv_file, term_excluding, bucket_excluding, regex_mode = parse_arguments()
 session = boto3.Session()
 s3 = session.client("s3", config=Config(retries={"max_attempts": 10, "mode": "standard"}))
 
 def get_buckets():
     resp = s3.list_buckets()
-    if root_dir:
-        # Filter buckets by contains if provided
-        return [b["Name"] for b in resp.get("Buckets", []) if root_dir in b["Name"]]
-    else:
-        # Return all buckets if no prefix provided
-        return [b["Name"] for b in resp.get("Buckets", [])]
+    buckets = []
+    
+    # Compile patterns for bucket filtering
+    bucket_include_pattern = compile_pattern(root_dir, regex_mode)
+    bucket_exclude_pattern = compile_pattern(bucket_excluding, regex_mode)
+    
+    for b in resp.get("Buckets", []):
+        bucket_name = b["Name"]
+        
+        # Apply bucket inclusion filter
+        if bucket_include_pattern and not matches_pattern(bucket_name, bucket_include_pattern, regex_mode):
+            continue
+            
+        # Apply bucket exclusion filter
+        if bucket_exclude_pattern and matches_pattern(bucket_name, bucket_exclude_pattern, regex_mode):
+            continue
+            
+        buckets.append(bucket_name)
+    
+    return buckets
+
+def compile_pattern(pattern, mode):
+    """Compile a pattern based on the regex mode"""
+    if not pattern:
+        return None
+    
+    if mode == 'literal':
+        return pattern
+    elif mode == 'case_sensitive':
+        return re.compile(pattern)
+    elif mode == 'case_insensitive':
+        return re.compile(pattern, re.IGNORECASE)
+    return pattern
+
+def matches_pattern(text, pattern, mode):
+    """Check if text matches the pattern based on regex mode"""
+    if not pattern:
+        return False
+    
+    if mode == 'literal':
+        return pattern in text
+    elif mode in ['case_sensitive', 'case_insensitive']:
+        return pattern.search(text) is not None
+    return False
+
+def should_exclude_object(key):
+    """Check if object should be excluded based on term_excluding"""
+    if term_excluding:
+        return matches_pattern(key, term_excluding, regex_mode)
+    return False
 
 def list_hits_contains(bucket, substr):
     p = s3.get_paginator("list_objects_v2")
+    
+    # Compile the search pattern
+    search_pattern = compile_pattern(substr, regex_mode)
+    
     for page in p.paginate(Bucket=bucket):
         for obj in page.get("Contents", []):
             key = obj["Key"]
-            if substr in key:
+            if matches_pattern(key, search_pattern, regex_mode) and not should_exclude_object(key):
                 yield {
                     "Bucket": bucket,
                     "Key": key,

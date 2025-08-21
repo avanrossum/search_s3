@@ -1,5 +1,9 @@
 # S3 Object Search Tool
 
+![Tests](https://github.com/<YOUR_GITHUB_USERNAME>/search_s3/actions/workflows/tests.yml/badge.svg)
+![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+
 A powerful Python script for searching S3 objects across multiple buckets with flexible filtering and output options.
 
 ## Features
@@ -305,7 +309,7 @@ For troubleshooting, you can add verbose output by modifying the script to inclu
 
 ## License
 
-[Add your license information here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 

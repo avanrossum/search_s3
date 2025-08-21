@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
-import boto3, sys, argparse, os, csv, re
-from botocore.config import Config
+import sys, argparse, os, csv, re
+
+try:  # pragma: no cover - handled in tests when boto3 missing
+    import boto3
+    from botocore.config import Config
+except ModuleNotFoundError:  # pragma: no cover
+    boto3 = None
+    Config = None
+
+s3 = None
+term = root_dir = raw_output = stacked_output = csv_output = csv_file = None
+term_excluding = bucket_excluding = regex_mode = None
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Search S3 objects for a term')
@@ -31,10 +41,6 @@ def parse_arguments():
     regex_mode = 'case_sensitive' if args.regex else ('case_insensitive' if args.regex_ignore_case else 'literal')
     
     return term, bucket_prefix, args.raw, args.stacked, args.csv, args.csv_file, args.term_excluding, args.bucket_excluding, regex_mode
-
-term, root_dir, raw_output, stacked_output, csv_output, csv_file, term_excluding, bucket_excluding, regex_mode = parse_arguments()
-session = boto3.Session()
-s3 = session.client("s3", config=Config(retries={"max_attempts": 10, "mode": "standard"}))
 
 def get_buckets():
     resp = s3.list_buckets()
@@ -196,57 +202,69 @@ def display_results(results, raw_output=False, stacked_output=False):
         modified = r['LastModified'][:25]  # Keep some timezone info but limit length
         print(f"{r['Bucket']:<{bucket_width}} {r['Key']:<{key_width}} {size:<10} {modified:<25} {r['StorageClass']:<15}")
 
-buckets = get_buckets()
 
-if raw_output:
-    # Raw output - stream as found
-    print("Bucket\tKey\tSize\tLastModified\tStorageClass")
-    for b in buckets:
-        for r in list_hits_contains(b, term):
-            size = format_size(r['Size'])
-            print(f"{r['Bucket']}\t{r['Key']}\t{size}\t{r['LastModified']}\t{r['StorageClass']}")
 
-elif stacked_output:
-    # Stacked output - stream as found
-    object_count = 0
-    for b in buckets:
-        for r in list_hits_contains(b, term):
-            object_count += 1
-            print(f"=== Object {object_count} ===")
-            print(f"Bucket:     {r['Bucket']}")
-            print(f"Key:        {r['Key']}")
-            print(f"Size:       {format_size(r['Size'])}")
-            print(f"Modified:   {r['LastModified']}")
-            print(f"Class:      {r['StorageClass']}")
-            print()  # Empty line between objects
+def main():
+    global term, root_dir, raw_output, stacked_output, csv_output, csv_file
+    global term_excluding, bucket_excluding, regex_mode, s3
+    term, root_dir, raw_output, stacked_output, csv_output, csv_file, term_excluding, bucket_excluding, regex_mode = parse_arguments()
+    if boto3 is None or Config is None:
+        raise ImportError("boto3 is required to run this script")
+    session = boto3.Session()
+    s3 = session.client("s3", config=Config(retries={"max_attempts": 10, "mode": "standard"}))
 
-elif csv_output:
-    # CSV output - stream as found
-    if csv_file:
-        # Write to specified file
-        with open(csv_file, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
+    buckets = get_buckets()
+
+    if raw_output:
+        # Raw output - stream as found
+        print("Bucket	Key	Size	LastModified	StorageClass")
+        for b in buckets:
+            for r in list_hits_contains(b, term):
+                size = format_size(r['Size'])
+                print(f"{r['Bucket']}	{r['Key']}	{size}	{r['LastModified']}	{r['StorageClass']}")
+    elif stacked_output:
+        # Stacked output - stream as found
+        object_count = 0
+        for b in buckets:
+            for r in list_hits_contains(b, term):
+                object_count += 1
+                print(f"=== Object {object_count} ===")
+                print(f"Bucket:     {r['Bucket']}")
+                print(f"Key:        {r['Key']}")
+                print(f"Size:       {format_size(r['Size'])}")
+                print(f"Modified:   {r['LastModified']}")
+                print(f"Class:      {r['StorageClass']}")
+                print()
+    elif csv_output:
+        # CSV output - stream as found
+        if csv_file:
+            # Write to specified file
+            with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Bucket', 'Key', 'Size', 'LastModified', 'StorageClass'])
+                for b in buckets:
+                    for r in list_hits_contains(b, term):
+                        size = format_size(r['Size'])
+                        writer.writerow([r['Bucket'], r['Key'], size, r['LastModified'], r['StorageClass']])
+            print(f"Results saved to {csv_file}")
+        else:
+            # Write to stdout
+            writer = csv.writer(sys.stdout)
             writer.writerow(['Bucket', 'Key', 'Size', 'LastModified', 'StorageClass'])
             for b in buckets:
                 for r in list_hits_contains(b, term):
                     size = format_size(r['Size'])
                     writer.writerow([r['Bucket'], r['Key'], size, r['LastModified'], r['StorageClass']])
-        print(f"Results saved to {csv_file}")
     else:
-        # Write to stdout
-        writer = csv.writer(sys.stdout)
-        writer.writerow(['Bucket', 'Key', 'Size', 'LastModified', 'StorageClass'])
+        # Table format (default) - collect all results first for proper column sizing
+        all_results = []
         for b in buckets:
             for r in list_hits_contains(b, term):
-                size = format_size(r['Size'])
-                writer.writerow([r['Bucket'], r['Key'], size, r['LastModified'], r['StorageClass']])
+                all_results.append(r)
 
-else:
-    # Table format (default) - collect all results first for proper column sizing
-    all_results = []
-    for b in buckets:
-        for r in list_hits_contains(b, term):
-            all_results.append(r)
+        # Display results
+        display_results(all_results, raw_output, stacked_output)
 
-    # Display results
-    display_results(all_results, raw_output, stacked_output)
+
+if __name__ == "__main__":
+    main()

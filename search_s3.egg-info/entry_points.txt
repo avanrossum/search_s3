@@ -1,0 +1,2 @@
+[console_scripts]
+search-s3 = search_s3.core:main

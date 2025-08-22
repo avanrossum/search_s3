@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "search-s3"
+version = "1.0.0"
+description = "A powerful Python tool for searching S3 objects across multiple buckets"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Alex van Rossum", email = "alex@mipyip.com"}
+]
+maintainers = [
+    {name = "Alex van Rossum", email = "alex@mipyip.com"}
+]
+keywords = ["aws", "s3", "search", "objects", "buckets", "filtering", "regex"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.6"
+dependencies = [
+    "boto3>=1.26.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+    "black>=22.0",
+    "flake8>=4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/avanrossum/search_s3"
+Documentation = "https://github.com/avanrossum/search_s3#readme"
+Repository = "https://github.com/avanrossum/search_s3"
+"Bug Tracker" = "https://github.com/avanrossum/search_s3/issues"
+
+[project.scripts]
+search-s3 = "search_s3.core:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.txt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

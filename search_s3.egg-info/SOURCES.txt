@@ -1,0 +1,14 @@
+LICENSE
+MANIFEST.in
+README.md
+pyproject.toml
+requirements.txt
+search_s3/__init__.py
+search_s3/core.py
+search_s3.egg-info/PKG-INFO
+search_s3.egg-info/SOURCES.txt
+search_s3.egg-info/dependency_links.txt
+search_s3.egg-info/entry_points.txt
+search_s3.egg-info/requires.txt
+search_s3.egg-info/top_level.txt
+tests/test_search_s3.py
